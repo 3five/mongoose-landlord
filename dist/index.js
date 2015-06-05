@@ -66,7 +66,14 @@ module.exports =
 
 	var _lodash = __webpack_require__(2);
 
+	var landlordDefaults = {
+	  tenant: 'Tenant',
+	  tenantKey: '_tenant'
+	};
+
 	var landlordMiddlewareDefaults = {
+	  tenant: landlordDefaults,
+	  tenantKey: landlordDefaults.tenantKey,
 	  segmentPath: 'address',
 	  segmenter: function segmenter(req) {
 	    return req.hostname;
@@ -75,16 +82,19 @@ module.exports =
 
 	function Landlord(opts) {
 	  checkForErrors('Landlord Plugin', opts);
+	  var o = (0, _lodash.merge)({}, landlordDefaults, opts);
 
 	  return function (schema) {
 	    var options = arguments[1] === undefined ? {} : arguments[1];
 
-	    schema.add({ '_tenant': {
-	        type: opts.mongooseInstance.Schema.Types.ObjectId,
-	        ref: opts.tenant,
-	        required: true,
-	        index: options.index === false ? false : true
-	      } });
+	    var schemaAddition = {};
+	    schemaAddition[o.tenantKey] = {
+	      type: o.mongooseInstance.Schema.Types.ObjectId,
+	      ref: o.tenant,
+	      required: true,
+	      index: options.index === false ? false : true
+	    };
+	    schema.add(schemaAddition);
 	  };
 	}
 
@@ -92,7 +102,6 @@ module.exports =
 	  checkForErrors('Landlord Middleware', opts);
 
 	  var o = (0, _lodash.merge)({}, landlordMiddlewareDefaults, opts);
-	  var Tenant = o.mongooseInstance.model(o.tenant);
 
 	  return function (req, res, next) {
 	    var segment = o.segmenter(req);
@@ -100,11 +109,10 @@ module.exports =
 	      segment: segment,
 	      segmentPath: o.segmentPath,
 	      mongoose: o.mongooseInstance,
-	      tenant: Tenant
+	      tenant: o.mongooseInstance.model(o.tenant),
+	      tenantKey: o.tenantKey
 	    });
-	    res.locals.db.getContext(function () {
-	      next();
-	    });
+	    res.locals.db.getContext(next);
 	  };
 	}
 
@@ -115,6 +123,7 @@ module.exports =
 	    this.segment = opts.segment;
 	    this.segmentPath = opts.segmentPath;
 	    this.Tenant = opts.tenant;
+	    this.tenantKey = opts.tenantKey;
 	    this.mongoose = opts.mongoose;
 	    this.context = null;
 	  }
@@ -127,23 +136,28 @@ module.exports =
 	      var query = {};
 	      query[this.segmentPath] = this.segment;
 	      this.Tenant.findOne(query).then(function (result) {
-	        _this.context = result;
+	        _this.context = result.toJSON();
 	        done();
-	      }, done);
+	      }, function (err) {
+	        console.log(err);
+	        done();
+	      });
 	    }
 	  }, {
 	    key: 'getModel',
 	    value: function getModel(model) {
-	      console.log(this);
 	      var Model = this.mongoose.model(model);
-	      return Model.where({ _tenant: this.context._id });
+	      var query = {};
+	      query[this.tenantKey] = this.context._id;
+	      return Model.where(query);
 	    }
 	  }, {
 	    key: 'createModel',
 	    value: function createModel(model, data, options) {
 	      var Model = this.mongoose.model(model);
-	      var tenantRef = this.context._id;
-	      var modelInfo = (0, _lodash.merge)({}, { _tenant: tenantRef }, data);
+	      var tenantRef = {};
+	      tenantRef[this.tenantKey] = this.context._id;
+	      var modelInfo = (0, _lodash.merge)({}, tenantRef, data);
 	      return new Model(modelInfo, options);
 	    }
 	  }]);

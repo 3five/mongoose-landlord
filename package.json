@@ -8,8 +8,8 @@
     "build": "webpack",
     "dev": "webpack -w"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Jon Jaques <jon@3five.com>",
+  "license": "MIT",
   "dependencies": {
     "lodash": "^3.9.3"
   },

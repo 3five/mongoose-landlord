@@ -74,3 +74,7 @@ router.post('/api/people', function(req, res) {
 ## Docs
 
 More docs coming, read the source (lib/index.js) for more options. You can specify the Tenant name, properties and how the middleware segments different tenants.
+
+## License
+
+MIT (c)2015 3five Designs Inc.
