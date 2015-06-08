@@ -136,7 +136,9 @@ module.exports =
 	      var query = {};
 	      query[this.segmentPath] = this.segment;
 	      this.Tenant.findOne(query).then(function (result) {
-	        _this.context = result.toJSON();
+	        if (result) {
+	          _this.context = result.toJSON();
+	        }
 	        done();
 	      }, function (err) {
 	        console.log(err);
