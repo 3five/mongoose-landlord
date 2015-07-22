@@ -85,7 +85,7 @@ module.exports =
 	  var o = (0, _lodash.merge)({}, landlordDefaults, opts);
 
 	  return function (schema) {
-	    var options = arguments[1] === undefined ? {} : arguments[1];
+	    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
 	    var schemaAddition = {};
 	    schemaAddition[o.tenantKey] = {
@@ -137,7 +137,7 @@ module.exports =
 	      query[this.segmentPath] = this.segment;
 	      this.Tenant.findOne(query).then(function (result) {
 	        if (result) {
-	          _this.context = result.toJSON();
+	          _this.context = result;
 	        }
 	        done();
 	      }, function (err) {
@@ -162,6 +162,22 @@ module.exports =
 	      var modelInfo = (0, _lodash.merge)({}, tenantRef, data);
 	      return new Model(modelInfo, options);
 	    }
+	  }, {
+	    key: 'createModels',
+	    value: function createModels(model, datas, options) {
+	      var _this2 = this;
+
+	      var Model = this.mongoose.model(model);
+	      datas = Array.isArray(datas) ? datas : [datas];
+	      var models = (0, _lodash.map)(datas, function (d) {
+	        d[_this2.tenantKey] = _this2.context._id;
+	        return d;
+	      });
+	      models.save = function (opts) {
+	        return Model.create(this, (0, _lodash.merge)({}, options, opts));
+	      };
+	      return models;
+	    }
 	  }]);
 
 	  return DBContext;
@@ -169,27 +185,27 @@ module.exports =
 
 	function checkForErrors(name, opts) {
 	  if (!opts) {
-	    throw new Error('' + name + ': Must pass a configuration object');
+	    throw new Error(name + ': Must pass a configuration object');
 	  }
 
 	  if (!opts.tenant) {
-	    throw new Error('' + name + ': Must specify a Tenant model');
+	    throw new Error(name + ': Must specify a Tenant model');
 	  }
 
 	  if (!opts.mongooseInstance) {
-	    throw new Error('' + name + ': Must pass in mongoose instance specific to your application');
+	    throw new Error(name + ': Must pass in mongoose instance specific to your application');
 	  }
 	}
 
 /***/ },
 /* 1 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	module.exports = require("mongoose");
 
 /***/ },
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	module.exports = require("lodash");
 
